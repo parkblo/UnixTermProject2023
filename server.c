@@ -12,7 +12,7 @@ int server_oriented_io() {
 #ifdef TIMES
         gettimeofday(&stime, NULL);
 #endif
-           
+        
 	printf("**Program IO, communication, and the rest\n");
 
 #ifdef TIMES

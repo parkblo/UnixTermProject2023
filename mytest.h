@@ -1,6 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <string.h>
+#include <sys/time.h>
 int create_source_data();
 int client_oriented_io();
 int server_oriented_io();
