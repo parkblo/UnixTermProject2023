@@ -11,7 +11,7 @@ int create_source_data() {
 
         int data[BUFSIZE];
         int fd[4];
-        int i;
+        int i, j;
 
         //compute node 파일 생성 및 에러 검출
         for (i = 0; i < 4; i++) {
@@ -32,7 +32,7 @@ int create_source_data() {
         }
 
         // input data 분산
-        for (int i = 0; i < 4; ++i) {
+        for (i = 0; i < 4; ++i) {
                 pid_t pid = fork();
 
                 if (pid == -1) {
@@ -40,7 +40,7 @@ int create_source_data() {
                         exit(0);
                 }
                 else if (pid == 0) {
-                        for (int j = 0; j < 256 * 1024; ++j) {
+                        for (j = 0; j < 256 * 1024; ++j) {
                                 write(fd[i], &data[4 * j + i], sizeof(int));
                         }
                 }
@@ -50,7 +50,7 @@ int create_source_data() {
         }
 
         // 파일 닫기 및 에러 검출
-        for (int i = 0; i < 4; ++i) {
+        for (i = 0; i < 4; ++i) {
                 if (close(fd[i]) == -1) {
                         perror("dat 파일 닫기 오류");
                         exit(0);
