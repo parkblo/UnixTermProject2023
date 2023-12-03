@@ -1,9 +1,4 @@
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <string.h>
-#include <stdio.h>
+#include "mytest.h"
 
 #define IO_CHUNK_SIZE 1024
 #define CHUNKS_NUM 256
@@ -86,6 +81,6 @@ int main()
             close(pipe_fd);
         }
     }
-    
+
     return 0;
 }
