@@ -5,6 +5,8 @@
 #include <string.h>
 #include <sys/time.h>
 #include <sys/wait.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 int create_source_data();
 int client_oriented_io();
 int server_oriented_io();
