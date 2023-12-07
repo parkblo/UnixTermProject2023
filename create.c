@@ -43,6 +43,7 @@ int create_source_data() {
                         for (j = 0; j < 256 * 1024; ++j) {
                                 write(fd[i], &data[4 * j + i], sizeof(int));
                         }
+                        exit(1);
                 }
                 else {
                         wait(NULL);
