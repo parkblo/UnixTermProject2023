@@ -269,7 +269,7 @@ int client_oriented_io() {
 
 			time_result = (etime.tv_sec - stime.tv_sec) * 1000.0;      // sec to ms
 			time_result += ((etime.tv_usec - stime.tv_usec) / 1000.0); // us to ms
-			printf("Client_oriented_io Comm. %d TIMES == %.2f ms\n", i, time_result);
+			printf("Client_oriented_io IO. %d TIMES == %.2f ms\n", i, time_result);
 
 			exit(1);
 
