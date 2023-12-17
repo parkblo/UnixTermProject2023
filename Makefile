@@ -22,4 +22,4 @@ server.o: server.c
 	$(CC) $(CFLAGS) -DTIMES -c $<
 
 clean:
-	rm -f *.o *.a *.dat mytest
+	rm -f *.o *.a *.dat *.fifo *.ionode mytest
