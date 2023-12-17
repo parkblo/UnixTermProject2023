@@ -51,8 +51,7 @@ int main() {
 				close(p1p4[1][1]);
 
 
-				for (j = 0; j < 1024 * 256; j += 1024) {
-					printf("%d \n", rData[j]);
+				for (j = 0; j < 1024 * 256; j += 1024) {				
 					memcpy(rcvData[0], rData + j, 256 * sizeof(int));
 					read(p1p2[1][0], rcvData[1], 256 * sizeof(int));
 					read(p1p3[1][0], rcvData[2], 256 * sizeof(int));
