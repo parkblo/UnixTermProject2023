@@ -15,6 +15,9 @@ void makeFifo() { //fifo naming : s1c1.fifo -> server)
 }
 
 void client(int clientID) {
+	struct timeval stime,etime;
+    double time_result;
+
 	//1. 4개의 서버와의 피포파일을 쓰기모드로 연다.
 	char fifoname[10];
 	int fifo_fd[4];
@@ -30,15 +33,31 @@ void client(int clientID) {
 	int data[QuarterSize];
 	char datname[7];
 	
+	gettimeofday(&stime, NULL);
+
 	sprintf(datname, "P%d.dat", clientID+1);
 	client_fd = open(datname, O_RDONLY);
 	
 	read(client_fd, &data, sizeof(int)*QuarterSize);
 
+	gettimeofday(&etime, NULL);
+
+	time_result = (etime.tv_sec - stime.tv_sec) * 1000.0;      // sec to ms
+    time_result += ((etime.tv_usec - stime.tv_usec) / 1000.0); // us to ms
+    printf("Server_oriented_io Comp. %d TIMES == %.2f ms\n", clientID, time_result);
+
 	//3. 데이터를 256씩 순차적으로 1, 2, 3, 4번 서버에 보낸다.
+	gettimeofday(&stime, NULL);
+
 	for (i = 0; i < QuarterSize / 256; i++) {
 		write(fifo_fd[i%4], &data[i * 256], sizeof(int)*256);
 	}
+
+	gettimeofday(&etime, NULL);
+
+	time_result = (etime.tv_sec - stime.tv_sec) * 1000.0;      // sec to ms
+    time_result += ((etime.tv_usec - stime.tv_usec) / 1000.0); // us to ms
+    printf("Server_oriented_io Comm. %d TIMES == %.2f ms\n", clientID, time_result);
 
 	//4. 모든 피포를 닫는다.
 	for (i = 0; i < 4; i++) {
@@ -47,6 +66,9 @@ void client(int clientID) {
 }
 
 void server(int serverID){
+	struct timeval stime,etime;
+    double time_result;
+
 	pid_t pidS;
 	int chunk[1024];
 	int ionode_fd, fifo_fd[4];
@@ -72,6 +94,8 @@ void server(int serverID){
 		fifo_fd[i] = open(fifoname, O_RDONLY);
 	}
 
+	gettimeofday(&stime, NULL);
+
     for(i=0; i<256; i++){
         //3-1. 각 피포파일에서 순차적으로 Int 1개씩 256번을 담아 청크배열을 만든다.
         for (j=0; j<256; j++) {
@@ -85,6 +109,12 @@ void server(int serverID){
         
         //3-3. 위 과정을 반복한다.
     }
+
+	gettimeofday(&etime, NULL);
+
+	time_result = (etime.tv_sec - stime.tv_sec) * 1000.0;      // sec to ms
+    time_result += ((etime.tv_usec - stime.tv_usec) / 1000.0); // us to ms
+    printf("Server_oriented_io IO. %d TIMES == %.2f ms\n", serverID, time_result);
 
 	//4. 모든 피포를 닫는다.
 	for (i=0; i<4; i++) {

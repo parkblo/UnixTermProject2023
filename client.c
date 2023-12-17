@@ -29,16 +29,33 @@ int client_oriented_io() {
 		pipe(p3p4[i]);
 	}
 
+	struct timeval stime,etime;
+    double time_result;
+
 	//Client Process
 	for (i = 0; i < 4; i++) {
+
 		switch (pid = fork()) {
 		case -1:
 			perror("error on fork");
 
 		case 0:
+			// Comp.
+			gettimeofday(&stime, NULL);
+
 			sprintf(fileName, "P%d.dat", (i + 1));
 			fd = open(fileName, O_RDONLY);
 			read(fd, rData, sizeof(int) * 1024 * 256);
+
+			gettimeofday(&etime, NULL);
+
+			time_result = (etime.tv_sec - stime.tv_sec) * 1000.0;      // sec to ms
+			time_result += ((etime.tv_usec - stime.tv_usec) / 1000.0); // us to ms
+			printf("Client_oriented_io Comp. %d TIMES == %.2f ms\n", i, time_result);
+
+
+			// Comm.
+			gettimeofday(&stime, NULL);
 
 			if (i == 0) {
 				close(p1p2[0][0]);
@@ -191,6 +208,12 @@ int client_oriented_io() {
 				}
 			}
 
+			gettimeofday(&etime, NULL);
+
+			time_result = (etime.tv_sec - stime.tv_sec) * 1000.0;      // sec to ms
+			time_result += ((etime.tv_usec - stime.tv_usec) / 1000.0); // us to ms
+			printf("Client_oriented_io Comm. %d TIMES == %.2f ms\n", i, time_result);
+
 			exit(1);
 
 		default:
@@ -206,6 +229,9 @@ int client_oriented_io() {
 			perror("error on fork");
 		case 0:
 			fd2 = open(ioNode[i], O_RDWR | O_CREAT | O_TRUNC | O_APPEND, 0644);
+
+			// IO.
+			gettimeofday(&stime, NULL);
 
 			if (i == 0) {
 				close(c1s1[1]);
@@ -239,6 +265,12 @@ int client_oriented_io() {
 					write(fd2, ioData, 1024 * sizeof(int));
 				}
 			}
+			gettimeofday(&etime, NULL);
+
+			time_result = (etime.tv_sec - stime.tv_sec) * 1000.0;      // sec to ms
+			time_result += ((etime.tv_usec - stime.tv_usec) / 1000.0); // us to ms
+			printf("Client_oriented_io Comm. %d TIMES == %.2f ms\n", i, time_result);
+
 			exit(1);
 
 		default:
