@@ -15,8 +15,6 @@ void makeFifo() { //fifo naming : s1c1.fifo -> server)
 }
 
 void client(int clientID) {
-	//printf("%d번 클라이언트 생성\n", clientID);
-    
 	//1. 4개의 서버와의 피포파일을 쓰기모드로 연다.
 	char fifoname[10];
 	int fifo_fd[4];
@@ -50,7 +48,6 @@ void client(int clientID) {
 
 void server(int serverID){
 	pid_t pidS;
-	//printf("%d번 서버 생성\n", serverID);
 	int chunk[1024];
 	int ionode_fd, fifo_fd[4];
 	int i, j, k;
@@ -73,7 +70,6 @@ void server(int serverID){
 		
 		sprintf(fifoname, "c%ds%d.fifo", i+1, serverID+1);
 		fifo_fd[i] = open(fifoname, O_RDONLY);
-		//printf("%d 서버 %d 피포 읽기모드로 열음:%d\n", serverID+1, i+1, fifo_fd[i]);
 	}
 
     for(i=0; i<256; i++){
