@@ -1,86 +1,116 @@
 #include "mytest.h"
 
-#define IO_CHUNK_SIZE 1024
-#define CHUNKS_NUM 256
+#define QuarterSize (1024 * 256)
 
-/*
-전체 정수의 개수: 1024*1024
-한 IO NODE에 저장할 정수의 개수: 256*1024
-한 청크에 들어갈 정수의 개수: 1024
-한 IO NODE의 청크의 총 개수: 256
-*/
+void makeFifo() { //fifo naming : s1c1.fifo -> server)
+	int i, j;
+	char fifoname[10];
 
-int main()
-{
-    pid_t pid;
-    int fd, pipe_fd, cn_fd;
-    char *fifo[4] = {"/fifo1", "/fifo2", "/fifo3", "/fifo4"};
-    char *computerNode[4] = {"P1.dat", "P2.dat", "P3.dat", "P4.dat"};
-    char *ionode[4] = {"ionode1", "ionode2", "ionode3", "ionode4"};
-    int io_chunk[4][CHUNKS_NUM][IO_CHUNK_SIZE]; /* i번째 io node의 j번째 io chunk의 k번째 정수 */
-    int buf[1][CHUNKS_NUM][IO_CHUNK_SIZE];
+	for (i=0; i<4; i++) {
+		for (j=0; j<4; j++) {
+			sprintf(fifoname, "c%ds%d.fifo", i+1, j+1);
+			mkfifo(fifoname, 0644);
+		}
+	}
+}
 
-    /* FIFO 만들기 */
-    for(int i=0; i<4; i++)
-    {
-        if (mkfifo(fifo[i], 0666) == -1) {
-            perror("mkfifo");
-            exit(1);
-        }
+void client(int clientID) {
+	//printf("%d번 클라이언트 생성\n", clientID);
+    
+	//1. 4개의 서버와의 피포파일을 쓰기모드로 연다.
+	char fifoname[10];
+	int fifo_fd[4];
+	int i;
+
+    for (i=0; i<4; i++) {
+        sprintf(fifoname, "c%ds%d.fifo", clientID+1, i+1);
+        fifo_fd[i] = open(fifoname, O_WRONLY);
     }
 
-    for(int i=0; i<4; i++)
-    {
-        pid = fork();
+    //2. P%d.dat 에서 클라이언트 번호에 맞는 데이터를 읽어들여 data배열에 저장한다.
+	int client_fd;
+	int data[QuarterSize];
+	char datname[7];
+	
+	sprintf(datname, "P%d.dat", clientID+1);
+	client_fd = open(datname, O_RDONLY);
+	
+	read(client_fd, &data, sizeof(int)*QuarterSize);
 
-        if(pid < 0) /* Error */
-        {
-            perror("fork");
-            exit(1);
-        }
-        else if(pid == 0) /* Child: Computer Node를 읽어 IO chunk를 만들어나감 */
-        {
-            for(int j=0; j<CHUNKS_NUM; j++)
-            {
-                for(int k=0, m=0; k<IO_CHUNK_SIZE; k++, m++)
-                {
-                    if (m >= 4) m = 0; /* computerNode[3]까지 돌고 다시 [0]으로 가기위함 */
+	//3. 데이터를 256씩 순차적으로 1, 2, 3, 4번 서버에 보낸다.
+	for (i = 0; i < QuarterSize / 256; i++) {
+		write(fifo_fd[i%4], &data[i * 256], sizeof(int)*256);
+	}
 
-                    if ((cn_fd = open(computerNode[m], O_RDONLY)) == -1){
-                        perror("computer node open");
-                        exit(1);
-                    }
-                    lseek(cn_fd, ((j*4+i)*IO_CHUNK_SIZE + k)*sizeof(int), SEEK_SET);
-                    read(cn_fd, &io_chunk[i][j][k], sizeof(int));
-                    close(cn_fd);
-                }
+	//4. 모든 피포를 닫는다.
+	for (i = 0; i < 4; i++) {
+		close(fifo_fd[i]);
+	}
+}
+
+void server(int serverID){
+	pid_t pidS;
+	//printf("%d번 서버 생성\n", serverID);
+	int chunk[1024];
+	int ionode_fd, fifo_fd[4];
+	int i, j, k;
+	
+	pidS = fork();
+	if (pidS == 0) {
+		client(serverID);
+		exit(0);
+	}
+
+	//1. serveerID에 따라 ionode파일을 만들어 쓰기모드로 연다.
+	char ionodename[9];
+
+	sprintf(ionodename, "%d.ionode", serverID+1);
+	ionode_fd = open(ionodename, O_CREAT | O_WRONLY, 0644);
+
+	//2. serverID에 따라 해당하는 피포파일 4개를 읽기모드로 연다.
+	for (i=0; i<4; i++){
+		char fifoname[10];
+		
+		sprintf(fifoname, "c%ds%d.fifo", i+1, serverID+1);
+		fifo_fd[i] = open(fifoname, O_RDONLY);
+		//printf("%d 서버 %d 피포 읽기모드로 열음:%d\n", serverID+1, i+1, fifo_fd[i]);
+	}
+
+    for(i=0; i<256; i++){
+        //3-1. 각 피포파일에서 순차적으로 Int 1개씩 256번을 담아 청크배열을 만든다.
+        for (j=0; j<256; j++) {
+            for(k = 0; k < 4; k++) {
+                int n = read(fifo_fd[k], &chunk[j*4+k], sizeof(int));
             }
-
-            if ((pipe_fd = open(fifo[i], O_WRONLY)) == -1) {
-                perror("pipe open");
-                exit(1);
-            }
-            write(pipe_fd, io_chunk[i], sizeof(io_chunk[i]));
-
-            close(pipe_fd);
-            exit(0);
         }
-        else /* Parent: FIFO로 받은 데이터를 IO node에 작성 */
-        {
-            pipe_fd = open(fifo[i], O_RDONLY);
-            read(pipe_fd, buf, sizeof(buf));
-            
-            if((fd = open(ionode[i], O_WRONLY | O_CREAT, 0644)) == -1)
-            {
-                perror("io node open");
-                exit(1);
-            }
-            write(fd, buf, sizeof(buf));
-
-            close(fd);
-            close(pipe_fd);
-        }
+        
+        //3-2. 청크배열을 ionode 파일에 저장한다.
+        write(ionode_fd, &chunk, sizeof(int)*1024);
+        
+        //3-3. 위 과정을 반복한다.
     }
 
-    return 0;
+	//4. 모든 피포를 닫는다.
+	for (i=0; i<4; i++) {
+		close(fifo_fd[i]);
+	}
+
+	//5. ionode파일을 닫는다.
+	close(ionode_fd);
+}
+
+int server_oriented_io() {
+	int i=0;
+	pid_t pidM;
+
+	makeFifo();
+	
+	for (i = 0; i < 4; i++) {
+		pidM = fork();	
+		if (pidM == 0) {
+			//server 받아서 ionode에 저장
+			server(i);
+			exit(0);
+		}
+	}
 }
