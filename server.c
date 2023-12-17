@@ -62,9 +62,9 @@ void server(int serverID){
 	}
 
 	//1. serveerID에 따라 ionode파일을 만들어 쓰기모드로 연다.
-	char ionodename[9];
+	char ionodename[10];
 
-	sprintf(ionodename, "%d.ionode", serverID+1);
+	sprintf(ionodename, "s%d.ionode", serverID+1);
 	ionode_fd = open(ionodename, O_CREAT | O_WRONLY, 0644);
 
 	//2. serverID에 따라 해당하는 피포파일 4개를 읽기모드로 연다.
